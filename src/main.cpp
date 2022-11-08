@@ -11,7 +11,7 @@
 char ssid[] = PRIVATE_SCH_IDENTIFICATION;
 char pass[] = PRIVATE_SCH_CONNECTION;
 
-const char *mqtt_server = "10.12.12.240";
+const char *mqtt_server = "10.12.12.236";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -20,10 +20,10 @@ char msg[50];
 int value = 0;
 
 // Led pins
-const int warning = 13;
-const int Failure = 11;
-const int Safe = 12;
-const int Ans = 14;
+const int warning = 12;
+const int failure = 8;
+const int Safe = 10;
+const int led_blue = 14;
 
 // Functions Definition
 void RSSIPrint() {
@@ -68,7 +68,7 @@ void setup_wifi() {
   while (WiFi.status() != WL_CONNECTED)
   {
     // Turn on the led, meaning is Attempting to connect to a network
-    digitalWrite(Failure, HIGH);
+    digitalWrite(failure, HIGH);
     digitalWrite(warning, HIGH);
 
     Serial.print("Attempting to connect to network: ");
@@ -81,17 +81,17 @@ void setup_wifi() {
     delay(10000);
   }
 
-  digitalWrite(Failure, LOW);
+  digitalWrite(failure, LOW);
   digitalWrite(Safe, HIGH);
 
   if (WiFi.status() == WL_CONNECTION_LOST)
   {
     digitalWrite(warning, HIGH);
-    digitalWrite(Failure, HIGH);
+    digitalWrite(failure, HIGH);
     digitalWrite(Safe, LOW);
   } else {
     digitalWrite(warning, LOW);
-    digitalWrite(Failure, LOW);
+    digitalWrite(failure, LOW);
     digitalWrite(Safe, HIGH);
   }
 
@@ -109,7 +109,7 @@ void callback(char* topic, byte* message, unsigned int length) {
   Serial.print(". Message: ");
   String messageTemp;
 
-  for (int i = 0; i < length; i++) {
+  for (unsigned int i = 0; i < length; i++) {
     Serial.print((char)message[i]);
     messageTemp += (char)message[i];
   }
@@ -119,14 +119,14 @@ void callback(char* topic, byte* message, unsigned int length) {
 
   // If a message is received on the topic MKR1000/ANS,
   // Changes the output state according to the message
-  if (String(topic) == "MKR1000/ANS") {
+  if (String(topic) == "MKR1000/LED") {
     Serial.print("Changing to ");
     if (messageTemp == "on") {
       Serial.print("on");
-      digitalWrite(Ans, HIGH);
+      digitalWrite(led_blue, HIGH);
     } else if (messageTemp == "off") {
       Serial.print("off");
-      digitalWrite(Ans, LOW);
+      digitalWrite(led_blue, LOW);
     }
   }
 }
@@ -162,9 +162,9 @@ void setup() {
   while (!Serial);
   
   pinMode(warning, OUTPUT);
-  pinMode(Failure, OUTPUT);
+  pinMode(failure, OUTPUT);
   pinMode(Safe, OUTPUT);
-  pinMode(Ans, OUTPUT);
+  pinMode(led_blue, OUTPUT);
 
   // Functions
   setup_wifi();
@@ -178,15 +178,37 @@ void setup() {
   // Upside is the Internet connection system
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-
-  while (WiFi.status() != WL_CONNECTED) {
-    digitalWrite(warning, HIGH);
-    if (WiFi.status() == WL_CONNECTED) {
-      digitalWrite(warning, LOW);
-      digitalWrite(Safe, HIGH);
+void reconnect()
+{
+  // Loop until we're reconnected
+  while (!client.connected())
+  {
+    Serial.print("Attempting MQTT connection...");
+    // Attempt to connect
+    if (client.connect("MKRClient"))
+    {
+      Serial.println("connected");
+      // Subscribe
+      client.subscribe("MKR1000/LED");
+      client.subscribe("test");
+    }
+    else
+    {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 2 seconds");
+      // Wait 5 seconds before retrying
+      delay(2000);
     }
   }
+}
+
+void loop()
+{
+  if (!client.connected())
+  {
+    reconnect();
+  }
+  // put your main code here, to run repeatedly:
   client.loop();
 }
