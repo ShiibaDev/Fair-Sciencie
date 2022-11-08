@@ -122,10 +122,10 @@ void callback(char* topic, byte* message, unsigned int length) {
   if (String(topic) == "MKR1000/LED") {
     Serial.print("Changing to ");
     if (messageTemp == "on") {
-      Serial.print("on");
+      Serial.print("on\n");
       digitalWrite(led_blue, HIGH);
     } else if (messageTemp == "off") {
-      Serial.print("off");
+      Serial.print("off\n");
       digitalWrite(led_blue, LOW);
     }
   }
@@ -183,7 +183,9 @@ void reconnect()
   // Loop until we're reconnected
   while (!client.connected())
   {
-    Serial.print("Attempting MQTT connection...");
+    digitalWrite(failure, HIGH);
+
+    Serial.print("Attempting MQTT connection...\n");
     // Attempt to connect
     if (client.connect("MKRClient"))
     {
