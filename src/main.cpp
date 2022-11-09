@@ -2,21 +2,16 @@
 #include <SPI.h>
 #include <PubSubClient.h>
 #include <WiFi101.h>
-#include <avr/dtostrf.h>
 
 #include <../lib/WiFiDef.h>
-#include <../lib/MQTT.h>
 
-#define IP_BROKER IP_SERVER
 // char ssid[] = WIFI_SSID;
 // char pass[] = WIFI_PASSWORD;
 
 char ssid[] = PRIVATE_SCH_IDENTIFICATION;
 char pass[] = PRIVATE_SCH_CONNECTION;
 
-unsigned long startMillis;
-unsigned long currentMillis;
-const unsigned long period = 1000;
+const char *mqtt_server = "10.12.12.240";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -25,48 +20,16 @@ char msg[50];
 int value = 0;
 
 // Led pins
-const int led_blue = 14;
-const int warning = 12;
-const int Safe = 10;
-const int failure = 8;
-const int BuzzSensorPin = 1;
-
-// Analog
-const int MovementSensorPin = A0;
-unsigned int MovementSensorValue = 0;
+const int warning = 13;
+const int Failure = 11;
+const int Safe = 12;
+const int Ans = 14;
 
 // Functions Definition
 void RSSIPrint() {
   long rssi = WiFi.RSSI();
   Serial.print("RSSI: ");
   Serial.println(rssi);
-}
-
-void reconnect()
-{
-  // Loop until we're reconnected
-  while (!client.connected())
-  {
-    digitalWrite(failure, HIGH);
-
-    Serial.print("Attempting MQTT connection...\n");
-    // Attempt to connect
-    if (client.connect("MKRClient"))
-    {
-      Serial.println("connected");
-      // Subscribe
-      client.subscribe("MKR1000/LED");
-      client.subscribe("MKR1000/buzzer");
-    }
-    else
-    {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 2 seconds");
-      // Wait 5 seconds before retrying
-      delay(2000);
-    }
-  }
 }
 
 void printData()
@@ -105,7 +68,7 @@ void setup_wifi() {
   while (WiFi.status() != WL_CONNECTED)
   {
     // Turn on the led, meaning is Attempting to connect to a network
-    digitalWrite(failure, HIGH);
+    digitalWrite(Failure, HIGH);
     digitalWrite(warning, HIGH);
 
     Serial.print("Attempting to connect to network: ");
@@ -118,17 +81,17 @@ void setup_wifi() {
     delay(10000);
   }
 
-  digitalWrite(failure, LOW);
+  digitalWrite(Failure, LOW);
   digitalWrite(Safe, HIGH);
 
   if (WiFi.status() == WL_CONNECTION_LOST)
   {
     digitalWrite(warning, HIGH);
-    digitalWrite(failure, HIGH);
+    digitalWrite(Failure, HIGH);
     digitalWrite(Safe, LOW);
   } else {
     digitalWrite(warning, LOW);
-    digitalWrite(failure, LOW);
+    digitalWrite(Failure, LOW);
     digitalWrite(Safe, HIGH);
   }
 
@@ -146,7 +109,7 @@ void callback(char* topic, byte* message, unsigned int length) {
   Serial.print(". Message: ");
   String messageTemp;
 
-  for (unsigned int i = 0; i < length; i++) {
+  for (int i = 0; i < length; i++) {
     Serial.print((char)message[i]);
     messageTemp += (char)message[i];
   }
@@ -156,26 +119,14 @@ void callback(char* topic, byte* message, unsigned int length) {
 
   // If a message is received on the topic MKR1000/ANS,
   // Changes the output state according to the message
-  if (String(topic) == "MKR1000/LED") {
+  if (String(topic) == "MKR1000/ANS") {
     Serial.print("Changing to ");
     if (messageTemp == "on") {
-      Serial.print("on\n");
-      digitalWrite(led_blue, HIGH);
+      Serial.print("on");
+      digitalWrite(Ans, HIGH);
     } else if (messageTemp == "off") {
-      Serial.print("off\n");
-      digitalWrite(led_blue, LOW);
-    }
-  }
-  if (String(topic) == "MKR1000/buzzer") {
-    if (messageTemp == "on")
-    {
-      Serial.print("on\n");
-      digitalWrite(BuzzSensorPin, HIGH);
-    }
-    else if (messageTemp == "off")
-    {
-      Serial.print("off\n");
-      digitalWrite(BuzzSensorPin, LOW);
+      Serial.print("off");
+      digitalWrite(Ans, LOW);
     }
   }
 }
@@ -210,40 +161,32 @@ void setup() {
   Serial.begin(9600);
   while (!Serial);
   
-  pinMode(BuzzSensorPin, OUTPUT);
   pinMode(warning, OUTPUT);
-  pinMode(failure, OUTPUT);
+  pinMode(Failure, OUTPUT);
   pinMode(Safe, OUTPUT);
-  pinMode(led_blue, OUTPUT);
+  pinMode(Ans, OUTPUT);
 
   // Functions
   setup_wifi();
-  client.setServer(IP_BROKER, 1883);
+  client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
 
   WiFiBoardConnection();
 
-  startMillis = millis();
+
   // attempt to connect to WiFi network:
   // Upside is the Internet connection system
 }
 
-void loop()
-{
-  if (!client.connected())
-  {
-    reconnect();
-  }
+void loop() {
+  // put your main code here, to run repeatedly:
 
-  currentMillis = millis();                  // get the current "time" (actually the number of milliseconds since the program started)
-  if (currentMillis - startMillis >= period) // test whether the period has elapsed
-  {
-    MovementSensorValue = analogRead(MovementSensorPin);
-    char MovementSensorstr[10];
-    dtostrf(MovementSensorValue, 1, 2, MovementSensorstr);
-    client.publish("MKR1000/sensor", MovementSensorstr); // if so, change the state of the LED.  Uses a neat trick to change the state
-    startMillis = currentMillis;                // IMPORTANT to save the start time of the current LED state.
+  while (WiFi.status() != WL_CONNECTED) {
+    digitalWrite(warning, HIGH);
+    if (WiFi.status() == WL_CONNECTED) {
+      digitalWrite(warning, LOW);
+      digitalWrite(Safe, HIGH);
+    }
   }
-
   client.loop();
 }
