@@ -42,6 +42,33 @@ void RSSIPrint() {
   Serial.println(rssi);
 }
 
+void reconnect()
+{
+  // Loop until we're reconnected
+  while (!client.connected())
+  {
+    digitalWrite(failure, HIGH);
+
+    Serial.print("Attempting MQTT connection...\n");
+    // Attempt to connect
+    if (client.connect("MKRClient"))
+    {
+      Serial.println("connected");
+      // Subscribe
+      client.subscribe("MKR1000/LED");
+      client.subscribe("MKR1000/buzzer");
+    }
+    else
+    {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 2 seconds");
+      // Wait 5 seconds before retrying
+      delay(2000);
+    }
+  }
+}
+
 void printData()
 {
   Serial.println("Board Information: ");
@@ -198,33 +225,6 @@ void setup() {
   startMillis = millis();
   // attempt to connect to WiFi network:
   // Upside is the Internet connection system
-}
-
-void reconnect()
-{
-  // Loop until we're reconnected
-  while (!client.connected())
-  {
-    digitalWrite(failure, HIGH);
-
-    Serial.print("Attempting MQTT connection...\n");
-    // Attempt to connect
-    if (client.connect("MKRClient"))
-    {
-      Serial.println("connected");
-      // Subscribe
-      client.subscribe("MKR1000/LED");
-      client.subscribe("MKR1000/buzzer");
-    }
-    else
-    {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 2 seconds");
-      // Wait 5 seconds before retrying
-      delay(2000);
-    }
-  }
 }
 
 void loop()
