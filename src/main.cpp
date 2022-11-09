@@ -5,6 +5,7 @@
 #include <avr/dtostrf.h>
 
 #include <../lib/WiFiDef.h>
+#include <../lib/MQTT.h>
 
 // char ssid[] = WIFI_SSID;
 // char pass[] = WIFI_PASSWORD;
