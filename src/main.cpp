@@ -7,6 +7,7 @@
 #include <../lib/WiFiDef.h>
 #include <../lib/MQTT.h>
 
+#define IP_BROKER IP_SERVER
 // char ssid[] = WIFI_SSID;
 // char pass[] = WIFI_PASSWORD;
 
@@ -16,8 +17,6 @@ char pass[] = PRIVATE_SCH_CONNECTION;
 unsigned long startMillis;
 unsigned long currentMillis;
 const unsigned long period = 1000;
-
-const char *mqtt_server = "10.12.12.236";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -218,7 +217,7 @@ void setup() {
 
   // Functions
   setup_wifi();
-  client.setServer(mqtt_server, 1883);
+  client.setServer(IP_BROKER, 1883);
   client.setCallback(callback);
 
   WiFiBoardConnection();
