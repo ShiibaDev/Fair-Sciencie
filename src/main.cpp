@@ -29,7 +29,7 @@ const int led_blue = 14;
 const int warning = 12;
 const int Safe = 10;
 const int failure = 8;
-const int BuzzSensorPin = 6;
+const int BuzzSensorPin = 1;
 
 // Analog
 const int MovementSensorPin = A0;
@@ -210,6 +210,7 @@ void setup() {
   Serial.begin(9600);
   while (!Serial);
   
+  pinMode(BuzzSensorPin, OUTPUT);
   pinMode(warning, OUTPUT);
   pinMode(failure, OUTPUT);
   pinMode(Safe, OUTPUT);
