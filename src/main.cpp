@@ -2,6 +2,7 @@
 #include <SPI.h>
 #include <PubSubClient.h>
 #include <WiFi101.h>
+#include <avr/dtostrf.h>
 
 #include <../lib/WiFiDef.h>
 
@@ -10,6 +11,10 @@
 
 char ssid[] = PRIVATE_SCH_IDENTIFICATION;
 char pass[] = PRIVATE_SCH_CONNECTION;
+
+unsigned long startMillis;
+unsigned long currentMillis;
+const unsigned long period = 1000;
 
 const char *mqtt_server = "10.12.12.236";
 
@@ -20,10 +25,15 @@ char msg[50];
 int value = 0;
 
 // Led pins
-const int warning = 12;
-const int failure = 8;
-const int Safe = 10;
 const int led_blue = 14;
+const int warning = 12;
+const int Safe = 10;
+const int failure = 8;
+const int BuzzSensorPin = 6;
+
+// Analog
+const int MovementSensorPin = A0;
+unsigned int MovementSensorValue = 0;
 
 // Functions Definition
 void RSSIPrint() {
@@ -129,6 +139,18 @@ void callback(char* topic, byte* message, unsigned int length) {
       digitalWrite(led_blue, LOW);
     }
   }
+  if (String(topic) == "MKR1000/buzzer") {
+    if (messageTemp == "on")
+    {
+      Serial.print("on\n");
+      digitalWrite(BuzzSensorPin, HIGH);
+    }
+    else if (messageTemp == "off")
+    {
+      Serial.print("off\n");
+      digitalWrite(BuzzSensorPin, LOW);
+    }
+  }
 }
 
 void WiFiBoardConnection() {
@@ -173,7 +195,7 @@ void setup() {
 
   WiFiBoardConnection();
 
-
+  startMillis = millis();
   // attempt to connect to WiFi network:
   // Upside is the Internet connection system
 }
@@ -192,7 +214,7 @@ void reconnect()
       Serial.println("connected");
       // Subscribe
       client.subscribe("MKR1000/LED");
-      client.subscribe("test");
+      client.subscribe("MKR1000/buzzer");
     }
     else
     {
@@ -211,6 +233,16 @@ void loop()
   {
     reconnect();
   }
-  // put your main code here, to run repeatedly:
+
+  currentMillis = millis();                  // get the current "time" (actually the number of milliseconds since the program started)
+  if (currentMillis - startMillis >= period) // test whether the period has elapsed
+  {
+    MovementSensorValue = analogRead(MovementSensorPin);
+    char MovementSensorstr[10];
+    dtostrf(MovementSensorValue, 1, 2, MovementSensorstr);
+    client.publish("MKR1000/sensor", MovementSensorstr); // if so, change the state of the LED.  Uses a neat trick to change the state
+    startMillis = currentMillis;                // IMPORTANT to save the start time of the current LED state.
+  }
+
   client.loop();
 }
