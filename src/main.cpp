@@ -29,7 +29,6 @@ const int led_blue = 14;
 const int warning = 12;
 const int Safe = 10;
 const int failure = 8;
-const int BuzzSensorPin = 1;
 
 // Analog
 const int MovementSensorPin = A0;
@@ -166,18 +165,6 @@ void callback(char* topic, byte* message, unsigned int length) {
       digitalWrite(led_blue, LOW);
     }
   }
-  if (String(topic) == "MKR1000/buzzer") {
-    if (messageTemp == "on")
-    {
-      Serial.print("on\n");
-      digitalWrite(BuzzSensorPin, HIGH);
-    }
-    else if (messageTemp == "off")
-    {
-      Serial.print("off\n");
-      digitalWrite(BuzzSensorPin, LOW);
-    }
-  }
 }
 
 void WiFiBoardConnection() {
@@ -209,8 +196,7 @@ void WiFiBoardConnection() {
 void setup() {
   Serial.begin(9600);
   while (!Serial);
-  
-  pinMode(BuzzSensorPin, OUTPUT);
+
   pinMode(warning, OUTPUT);
   pinMode(failure, OUTPUT);
   pinMode(Safe, OUTPUT);
