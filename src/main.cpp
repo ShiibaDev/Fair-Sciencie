@@ -8,6 +8,9 @@
 #include <../lib/MQTT.h>
 
 #define IP_BROKER IP_SERVER
+
+// You can do this: const char *mqttbroker = "<Your computer IP>";
+
 // char ssid[] = WIFI_SSID;
 // char pass[] = WIFI_PASSWORD;
 
@@ -68,6 +71,8 @@ void reconnect()
   }
 }
 
+
+// The function printData() is only used 1 time, to mention WiFi connection.
 void printData()
 {
   Serial.println("Board Information: ");
